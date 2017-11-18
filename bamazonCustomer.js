@@ -68,49 +68,28 @@ function start(){
 		.then(function(answer){
 		//based on answer, check database (run checkDatabase) if store has enough of item from input	
 		connection.query(
-			`SELECT stock_quantity FROM products WHERE item_id = ${answer.itemID}`, function(err, results){
+			`SELECT stock_quantity, price FROM products WHERE item_id = ${answer.itemID}`, function(err, results){
 				if(err) throw err;
 
 				if(parseInt(answer.units) <= results[0].stock_quantity){
-					placeOrder();
+					placeOrder(results[0].stock_quantity, parseInt(answer.units), answer.itemID, results[0].price);
 				}else {
 					console.log("Insufficient Quantity");
 					
-					connection.query("SELECT * FROM products", function(err, results){
-					if(err)throw err;
-
-					var table = new Table({
-						head:["item_id", "product_name", "price"],
-						colWidths: [20,20,20]
-					});
-					
-					for (var i=0; i<results.length; i++) {
-						table.push([results[i].item_id, results[i].product_name, results[i].price]);
-					}
-					console.log(table.toString());
-				});
+				start();
 
 				}
 			})
-			
-		
-		//if not enough, log insufficient quantity and prevent order
-		//if enough, fulfill order by calling placeOrder fn
 		})
 	});
 }
 
-// function checkDatabase(){
-// 	connection
-// 	.query("SELECT * FROM products", function(err, results){
 
-// 	}
-	// var chosenItem;
-	// 	for(var i=0; i < results.length;i++){
-	// 	if(results[i].itemID === answer)	
-	// 	}
-// }
-
-// function placeOrder (){
-
-// }
+function placeOrder (currentStock, orderSize, itemID, price) {
+	var newStockCount = currentStock - orderSize;
+	connection.query(`UPDATE products SET stock_quantity=${newStockCount} WHERE item_id=${itemID}`, function(err, results) {
+		if (err) throw err;
+		console.log(`Total cost is: ${price*orderSize}`)
+		start();
+	})
+}
