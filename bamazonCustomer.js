@@ -1,15 +1,14 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
-var table = require("cli-table2");
+var Table = require("cli-table2");
 
 //create connection information to sql database 
 var connection = mysql.createConnection({
 	host:"localhost",
 	port:3306,
 	user:"root",
-	password:"H8passwords!",
+	password:"H8passwords1!",
 	database:"bamazon"
-
 });
 
 //connect to mysql server and sql database 
@@ -31,9 +30,14 @@ function start(){
 
 		var table = new Table({
 			head:["item_id", "product_name", "price"],
-			colWidths: [100,200,100]
+			colWidths: [20,20,20]
 		});
+		
+		for (var i=0; i<results.length; i++) {
+			table.push([results[i].item_id, results[i].product_name, results[i].price]);
+		}
 		console.log(table.toString());
+
 	
 		//once have all the items, prompt user for what they'd like to buy
 		inquirer
@@ -64,9 +68,31 @@ function start(){
 		.then(function(answer){
 		//based on answer, check database (run checkDatabase) if store has enough of item from input	
 		connection.query(
-			"SELECT products.itemID, products.stock_quantity FROM products", function(err, results){
+			`SELECT stock_quantity FROM products WHERE item_id = ${answer.itemID}`, function(err, results){
 				if(err) throw err;
+
+				if(parseInt(answer.units) <= results[0].stock_quantity){
+					placeOrder();
+				}else {
+					console.log("Insufficient Quantity");
+					
+					connection.query("SELECT * FROM products", function(err, results){
+					if(err)throw err;
+
+					var table = new Table({
+						head:["item_id", "product_name", "price"],
+						colWidths: [20,20,20]
+					});
+					
+					for (var i=0; i<results.length; i++) {
+						table.push([results[i].item_id, results[i].product_name, results[i].price]);
+					}
+					console.log(table.toString());
+				});
+
+				}
 			})
+			
 		
 		//if not enough, log insufficient quantity and prevent order
 		//if enough, fulfill order by calling placeOrder fn
